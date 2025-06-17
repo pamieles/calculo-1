@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Solucionador de Desigualdades</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; font-size: 16px; }
+    .resultado { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 5px #aaa; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+  <h1>Solucionador de Desigualdades</h1>
+  <p>Escribe una desigualdad lineal o cuadrática (ej: <b>2x + 3 < 7</b> o <b>x^2 - 5x + 6 ≥ 0</b>)</p>
+
+  <input type="text" id="inequation" placeholder="Ej: x^2 - 5x + 6 >= 0">
+  <button onclick="resolverDesigualdad()">Resolver</button>
+
+  <div class="resultado" id="salida"></div>
+
+  <script>
+    function resolverDesigualdad() {
+      const input = document.getElementById('inequation').value;
+      const salida = document.getElementById('salida');
+      try {
+        // Limpiamos espacios y preparamos
+        let expr = input.replace(/\s/g, '').replace(/≥/g, '>=').replace(/≤/g, '<=');
+        const match = expr.match(/(.+)(<=|>=|<|>)(.+)/);
+        if (!match) throw "Formato inválido";
+
+        let [_, izquierda, operador, derecha] = match;
+        // Convertimos a forma f(x) = 0
+        const exprFinal = `(${izquierda}) - (${derecha})`;
+
+        // Evaluamos tipo
+        let tipo = exprFinal.includes('x^2') ? 'cuadratica' : 'lineal';
+
+        // Convertimos a forma de coeficientes
+        const coefs = obtenerCoeficientes(exprFinal);
+
+        let resultado = `<h3>Tipo: ${tipo}</h3>`;
+        resultado += `<p>Desigualdad: ${input}</p>`;
+        resultado += `<p>Forma estándar: (${izquierda}) ${operador} (${derecha}) → (${exprFinal}) ${operador} 0</p>`;
+
+        if (tipo === 'lineal') {
+          let x = -coefs.c / coefs.b;
+          resultado += `<p>Despeje: x ${operador} ${x.toFixed(2)}</p>`;
+          resultado += `<p>Intervalo solución: ${operador == '<' ? '(-∞, ' + x.toFixed(2) + ')' : operador == '<=' ? '(-∞, ' + x.toFixed(2) + ']' : operador == '>' ? '(' + x.toFixed(2) + ', ∞)' : '[' + x.toFixed(2) + ', ∞)'}</p>`;
+        } else {
+          const a = coefs.a, b = coefs.b, c = coefs.c;
+          const d = b * b - 4 * a * c;
+          if (d < 0) {
+            resultado += `<p>No hay raíces reales. La parábola siempre está ${a > 0 ? 'por encima' : 'por debajo'} del eje x.</p>`;
+            if ((operador == '>=' && a > 0) || (operador == '<=' && a < 0)) {
+              resultado += `<p>Intervalo solución: (-∞, ∞)</p>`;
+            } else {
+              resultado += `<p>Intervalo solución: ∅ (ninguna solución)</p>`;
+            }
+          } else {
+            const x1 = (-b - Math.sqrt(d)) / (2 * a);
+            const x2 = (-b + Math.sqrt(d)) / (2 * a);
+            const menor = Math.min(x1, x2).toFixed(2);
+            const mayor = Math.max(x1, x2).toFixed(2);
+
+            if (operador === '>=') {
+              resultado += `<p>Intervalos: (-∞, ${menor}] ∪ [${mayor}, ∞)</p>`;
+            } else if (operador === '>') {
+              resultado += `<p>Intervalos: (-∞, ${menor}) ∪ (${mayor}, ∞)</p>`;
+            } else if (operador === '<=') {
+              resultado += `<p>Intervalo: [${menor}, ${mayor}]</p>`;
+            } else if (operador === '<') {
+              resultado += `<p>Intervalo: (${menor}, ${mayor})</p>`;
+            }
+          }
+        }
+
+        salida.innerHTML = resultado;
+      } catch (err) {
+        salida.innerHTML = `<p style="color:red;">Error: ${err}</p>`;
+      }
+    }
+
+    function obtenerCoeficientes(expr) {
+      // expr = ax^2 + bx + c
+      let a = 0, b = 0, c = 0;
+      expr = expr.replace(/-/g, '+-');
+      const partes = expr.split('+').filter(p => p);
+
+      partes.forEach(term => {
+        if (term.includes('x^2')) {
+          a += parseFloat(term.replace('x^2', '') || '1');
+        } else if (term.includes('x')) {
+          b += parseFloat(term.replace('x', '') || '1');
+        } else {
+          c += parseFloat(term);
+        }
+      });
+
+      return { a, b, c };
+    }
+  </script>
+
+</body>
+</html>
